@@ -48,7 +48,7 @@ namespace chatbotvk.Bot.EntryPoint
         private void VkBot_OnGroupUpdateReceived(object sender, GroupUpdateReceivedEventArgs e)
         {
             //TODO: Сделать обработку событий обновлений группы.
-            this.Logger.LogInformation($"{DateTime.Now.ToShortTimeString()} Something happend in group.");
+            this.Logger.LogInformation($"{DateTime.Now.ToShortTimeString()} Event type: {e.Update.Type}.");
         }
         /// <summary>
         /// Обработчик запуска бота.

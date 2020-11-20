@@ -71,7 +71,9 @@ namespace chatbotvk.Bot.Core
             this.Logger.LogInformation($"VkBot: GroupId resolved. id: {groupId}");
             return groupId;
         }
-        private async Task SetupVkBotAsync(string accessToken, string groupUrl, int longPollTimeoutWaitSeconds)
+        private async Task SetupVkBotAsync(string accessToken, 
+                                           string groupUrl, 
+                                           int longPollTimeoutWaitSeconds)
         {
             if (string.IsNullOrEmpty(accessToken))
                 throw new ArgumentNullException(nameof(accessToken));
@@ -105,22 +107,26 @@ namespace chatbotvk.Bot.Core
             {
                 try
                 {
-                    BotsLongPollHistoryResponse longPollResponse = await Api.Groups.GetBotsLongPollHistoryAsync(
+                    // Делаем Long Poll запрос на сервер.
+                    Task<BotsLongPollHistoryResponse> longPollResponse = Api.Groups.GetBotsLongPollHistoryAsync(
                         new BotsLongPollHistoryParams
                         {
                             Key = this._pollSettings.Key,
                             Server = this._pollSettings.Server,
                             Ts = this._pollSettings.Ts,
                             Wait = this._longPollTimeoutWaitSeconds
-                        })
-                        .ContinueWith(CheckLongPollResponseForErrorsAndHandle)
-                        .ConfigureAwait(false);
+                        });
 
-                    if (longPollResponse == default(BotsLongPollHistoryResponse))
+                    // Обрабатываем ответ.
+                    BotsLongPollHistoryResponse handledResponse = 
+                        await CheckLongPollResponseForErrorsAndHandle(longPollResponse);
+
+                    if (handledResponse == default(BotsLongPollHistoryResponse))
                         continue;
 
-                    this.ProcessLongPollEvents(longPollResponse);
-                    _pollSettings.Ts = longPollResponse.Ts;
+                    // Обрабатываем событие.
+                    this.ProcessLongPollEvents(handledResponse);
+                    _pollSettings.Ts = handledResponse.Ts;
                 }
                 catch (Exception ex)
                 {
@@ -140,7 +146,7 @@ namespace chatbotvk.Bot.Core
                 }
             }
         }
-        private T CheckLongPollResponseForErrorsAndHandle<T>(Task<T> task)
+        private async Task<T> CheckLongPollResponseForErrorsAndHandle<T>(Task<T> task)
         {
             if (task.IsFaulted)
             {
@@ -155,12 +161,12 @@ namespace chatbotvk.Bot.Core
                         }
                         else if (ex is LongPollKeyExpiredException)
                         {
-                            this.SetupLongPollAsync();
+                            await this.SetupLongPollAsync();
                             return default(T);
                         }
                         else if (ex is LongPollInfoLostException)
                         {
-                            this.SetupLongPollAsync();
+                            await this.SetupLongPollAsync();
                             return default(T);
                         }
                         else
