@@ -31,7 +31,7 @@ namespace chatbotvk.Bot.Core
             this.Logger = logger;
             this.Api = vkApi;
 
-            this.SetupVkBot(accessToken, groupUrl, longPollTimeoutWaitSeconds);
+            this.SetupVkBotAsync(accessToken, groupUrl, longPollTimeoutWaitSeconds).Wait();
         }
         #endregion
 
@@ -49,16 +49,16 @@ namespace chatbotvk.Bot.Core
         #endregion
 
         #region Methods
-        private void SetupLongPoll()
+        private async Task SetupLongPollAsync()
         {
-            _pollSettings = Api.Groups.GetLongPollServer((ulong)this.GroupId);
+            _pollSettings = await Api.Groups.GetLongPollServerAsync((ulong)this.GroupId);
             this.Logger.LogInformation($"VkBot: LongPoolSettings received. ts: {_pollSettings.Ts}");
         }
-        private long ResolveGroupId(string groupUrl)
+        private async Task<long> ResolveGroupIdAsync(string groupUrl)
         {
             this.FilteredGroupUrl = Regex.Replace(groupUrl, ".*/", "");
 
-            VkObject result = this.Api.Utils.ResolveScreenName(this.FilteredGroupUrl);
+            VkObject result = await this.Api.Utils.ResolveScreenNameAsync(this.FilteredGroupUrl);
 
             if (result == null || !result.Id.HasValue)
                 throw new GroupNotResolvedException($"группа '{groupUrl}' не существует.");
@@ -71,21 +71,21 @@ namespace chatbotvk.Bot.Core
             this.Logger.LogInformation($"VkBot: GroupId resolved. id: {groupId}");
             return groupId;
         }
-        private void SetupVkBot(string accessToken, string groupUrl, int longPollTimeoutWaitSeconds)
+        private async Task SetupVkBotAsync(string accessToken, string groupUrl, int longPollTimeoutWaitSeconds)
         {
             if (string.IsNullOrEmpty(accessToken))
                 throw new ArgumentNullException(nameof(accessToken));
             if (string.IsNullOrEmpty(groupUrl))
                 throw new ArgumentNullException(nameof(groupUrl));
 
-            Api.Authorize(new ApiAuthParams
+            await Api.AuthorizeAsync(new ApiAuthParams
             {
                 AccessToken = accessToken
             });
 
             this._longPollTimeoutWaitSeconds = longPollTimeoutWaitSeconds;
             this.GroupUrl = groupUrl;
-            this.GroupId = this.ResolveGroupId(groupUrl);
+            this.GroupId = await this.ResolveGroupIdAsync(groupUrl);
 
             ServicePointManager.DefaultConnectionLimit = 20; //ограничение параллельных соединений для HttpClient
         }
@@ -99,7 +99,7 @@ namespace chatbotvk.Bot.Core
         }
         public async Task StartAsync()
         {
-            this.SetupLongPoll();
+            await this.SetupLongPollAsync();
             this.OnBotStarted?.Invoke(this, null);
             while (true)
             {
@@ -155,12 +155,12 @@ namespace chatbotvk.Bot.Core
                         }
                         else if (ex is LongPollKeyExpiredException)
                         {
-                            this.SetupLongPoll();
+                            this.SetupLongPollAsync();
                             return default(T);
                         }
                         else if (ex is LongPollInfoLostException)
                         {
-                            this.SetupLongPoll();
+                            this.SetupLongPollAsync();
                             return default(T);
                         }
                         else
