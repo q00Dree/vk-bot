@@ -1,5 +1,7 @@
 ﻿using chatbotvk.Bot.Core;
 using chatbotvk.Bot.Core.Contracts;
+using chatbotvk.Core.Services.External;
+using chatbotvk.Services.Bank;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,6 +32,7 @@ namespace chatbotvk.Bot.EntryPoint
                         });
 
                     services.AddSingleton<IVkBotManager, VkBotManager>();
+                    services.AddTransient<IExchangeRateService, ExchangeRateService>();
 
                     services.AddSingleton<Bot>();
                 })

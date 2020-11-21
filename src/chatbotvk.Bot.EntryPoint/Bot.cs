@@ -1,6 +1,8 @@
 ﻿using chatbotvk.Bot.Core;
 using chatbotvk.Bot.Core.Contracts;
 using chatbotvk.Bot.Core.Models.Events;
+using chatbotvk.Core.Models;
+using chatbotvk.Core.Services.External;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
@@ -20,10 +22,15 @@ namespace chatbotvk.Bot.EntryPoint
     {
         public IVkBotManager VkBot { get; private set; }
         public ILogger<Bot> Logger { get; set; }
-        public Bot(IVkBotManager VkBot, ILogger<Bot> logger)
+
+        private IExchangeRateService ExchangeRateService { get; set; }
+        public Bot(IVkBotManager VkBot, 
+                   ILogger<Bot> logger,
+                   IExchangeRateService exchangeRateService)
         {
             this.VkBot = VkBot;
             this.Logger = logger;
+            this.ExchangeRateService = exchangeRateService;
         }
         public void Start()
         {
@@ -32,8 +39,6 @@ namespace chatbotvk.Bot.EntryPoint
             VkBot.OnGroupUpdateReceived += VkBot_OnGroupUpdateReceived;
 
             this.VkBot.Start();
-
-            Console.ReadLine();
         }
 
         // Подробнее https://vk.com/dev/groups_events
@@ -77,6 +82,28 @@ namespace chatbotvk.Bot.EntryPoint
             {
                 string catUrl = @"https://loremflickr.com/400/300/";
                 await SendMessageWithImageFromWebAsync("cat", peerId, catUrl, "jpg");
+            }
+            else if(message_text == "rate")
+            {
+                BankResponse bankResponse = await ExchangeRateService.GetCurrentExchangeRatesAsync();
+
+                StringBuilder messageBuilder = new StringBuilder();
+
+                messageBuilder.Append($"Актуальный котировки на {bankResponse.CurrentRateDate.AddHours(3)}.\n");
+
+                foreach (var item in bankResponse.ActualValue)
+                {
+                    messageBuilder.Append($"Курс {item.Key} {item.Value} рублей.\n");
+                }
+
+                messageBuilder.Append($"Предыдущие котировки на {bankResponse.LastRateUpdateDate.AddHours(3)}.\n");
+
+                foreach (var item in bankResponse.PreviousValue)
+                {
+                    messageBuilder.Append($"Курс {item.Key} {item.Value} рублей.\n");
+                }
+
+                await SendMessageAsync(messageBuilder.ToString(), peerId);
             }
         }
         #endregion

@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\chatbotvk.Bot.Core\chatbotvk.Bot.Core.csproj" />
+    <ProjectReference Include="..\chatbotvk.Core\chatbotvk.Core.csproj" />
+    <ProjectReference Include="..\chatbotvk.Services.Bank\chatbotvk.Services.Bank.csproj" />
   </ItemGroup>
 
 </Project>
