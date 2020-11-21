@@ -32,13 +32,13 @@ namespace chatbotvk.Bot.EntryPoint
             this.Logger = logger;
             this.ExchangeRateService = exchangeRateService;
         }
-        public void Start()
+        public async Task StartAsync()
         {
             VkBot.OnMessageReceived += NewMessageHandler;
             VkBot.OnBotStarted += OnBotStartedHandler;
             VkBot.OnGroupUpdateReceived += VkBot_OnGroupUpdateReceived;
 
-            this.VkBot.Start();
+            await this.VkBot.StartAsync();
         }
 
         // Подробнее https://vk.com/dev/groups_events

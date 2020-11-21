@@ -95,18 +95,20 @@ namespace chatbotvk.Bot.Core
         {
             Api.Dispose();
         }
-        public void Start()
-        {
-            this.StartAsync().GetAwaiter().GetResult();
-        }
         public async Task StartAsync()
         {
+            // test field
+            int iteration_counter = 1;
+
             await this.SetupLongPollAsync();
             this.OnBotStarted?.Invoke(this, null);
             while (true)
             {
+                //TODO: Проверить, как часто отправляются запросы и узнать причину, 
+                //      почему валится сервер с ошибкой 143.
                 try
                 {
+                    this.Logger.LogInformation($"[{iteration_counter}] Время: {DateTime.Now} Делаем запрос на получение ключа.\n");
                     // Делаем Long Poll запрос на сервер.
                     Task<BotsLongPollHistoryResponse> longPollResponse = Api.Groups.GetBotsLongPollHistoryAsync(
                         new BotsLongPollHistoryParams
@@ -116,7 +118,6 @@ namespace chatbotvk.Bot.Core
                             Ts = this._pollSettings.Ts,
                             Wait = this._longPollTimeoutWaitSeconds
                         });
-
                     // Обрабатываем ответ.
                     BotsLongPollHistoryResponse handledResponse = 
                         await CheckLongPollResponseForErrorsAndHandle(longPollResponse);
@@ -127,11 +128,17 @@ namespace chatbotvk.Bot.Core
                     // Обрабатываем событие.
                     this.ProcessLongPollEvents(handledResponse);
                     _pollSettings.Ts = handledResponse.Ts;
+
+                    this.Logger.LogInformation($"[{iteration_counter}] Время: {DateTime.Now} Получили и обработали ответ.\n");
+                    iteration_counter++;
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.LogError(ex.Message + "\r\n" + ex.StackTrace);
-                    throw;
+                    Console.BackgroundColor = ConsoleColor.Red;
+                    this.Logger.LogInformation($"[{iteration_counter}] Время: {DateTime.Now} Словили ошибку {ex.Message}. Переотправляем запрос на новый ключ.\n");
+                    Console.ResetColor();
+                   // this.Logger.LogError(ex.Message + "\r\n" + ex.StackTrace);
+                    await this.SetupLongPollAsync();
                 }
             }
         }

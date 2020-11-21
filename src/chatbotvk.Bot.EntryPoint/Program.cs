@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Net.Http;
+using System.Threading.Tasks;
 using VkNet;
 using VkNet.Abstractions;
 
@@ -13,7 +14,7 @@ namespace chatbotvk.Bot.EntryPoint
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var host = Host.CreateDefaultBuilder()
                 .ConfigureServices((context, services) =>
@@ -39,7 +40,7 @@ namespace chatbotvk.Bot.EntryPoint
                 .Build();
 
             Bot bot = ActivatorUtilities.CreateInstance<Bot>(host.Services);
-            bot.Start();
+            await bot.StartAsync();
         }
     }
 }
