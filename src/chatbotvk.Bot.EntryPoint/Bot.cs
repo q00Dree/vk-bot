@@ -5,6 +5,7 @@ using chatbotvk.Core.Models;
 using chatbotvk.Core.Services.External;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -104,6 +105,56 @@ namespace chatbotvk.Bot.EntryPoint
                 }
 
                 await SendMessageAsync(messageBuilder.ToString(), peerId);
+            }
+            if (message_text.StartsWith("map"))
+            {
+                string[] parsedString = message_text.Split(new char[] { ' ' });
+
+                if (parsedString.Length > 3)
+                {
+                    await VkBot.Api.Messages.SendAsync(new MessagesSendParams
+                    {
+                        PeerId = peerId, //Id получателя
+                        Message = "Неверный ввод 😆\nПопробуйте map 55.54 37.34", //Сообщение
+                        RandomId = new Random().Next(999999) //Уникальный идентификатор
+                    });
+                }
+                else
+                {
+                    List<string> coords = new List<string>(parsedString);
+                    coords.RemoveAt(0);
+
+                    for (int i = 0; i < coords.Count; i++)
+                    {
+                        if (coords[i].Contains(','))
+                            coords[i] = coords[i].Replace(',', '.');
+                    }
+
+                    try
+                    {
+                        await VkBot.Api.Messages.SendAsync(new MessagesSendParams
+                        {
+                            PeerId = peerId, //Id получателя
+                            Message = "Найденная карта", //Сообщение
+                                                         // Lat = 55.7531773, //Ширина
+                                                         // Longitude = 37.6157659, //Долгота
+                            Lat = Convert.ToDouble(coords[0]),
+                            Longitude = Convert.ToDouble(coords[1]),
+                            
+                            RandomId = new Random().Next(999999) //Уникальный идентификатор
+                        });
+                    }
+                    catch(Exception ex)
+                    {
+                        await VkBot.Api.Messages.SendAsync(new MessagesSendParams
+                        {
+                            PeerId = peerId, //Id получателя
+                            Message = ex.Message, //Сообщение ошибки
+
+                            RandomId = new Random().Next(999999) //Уникальный идентификатор
+                        });
+                    }
+                }
             }
         }
         #endregion
