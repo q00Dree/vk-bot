@@ -1,9 +1,12 @@
 ﻿using chatbotvk.Bot.Core;
 using chatbotvk.Bot.Core.Contracts;
+using chatbotvk.Core.Services.External;
+using chatbotvk.Services.Bank;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Net.Http;
+using System.Threading.Tasks;
 using VkNet;
 using VkNet.Abstractions;
 
@@ -11,7 +14,7 @@ namespace chatbotvk.Bot.EntryPoint
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var host = Host.CreateDefaultBuilder()
                 .ConfigureServices((context, services) =>
@@ -30,13 +33,14 @@ namespace chatbotvk.Bot.EntryPoint
                         });
 
                     services.AddSingleton<IVkBotManager, VkBotManager>();
+                    services.AddTransient<IExchangeRateService, ExchangeRateService>();
 
                     services.AddSingleton<Bot>();
                 })
                 .Build();
 
             Bot bot = ActivatorUtilities.CreateInstance<Bot>(host.Services);
-            bot.Start();
+            await bot.StartAsync();
         }
     }
 }

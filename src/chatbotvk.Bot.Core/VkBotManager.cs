@@ -95,16 +95,14 @@ namespace chatbotvk.Bot.Core
         {
             Api.Dispose();
         }
-        public void Start()
-        {
-            this.StartAsync().GetAwaiter().GetResult();
-        }
         public async Task StartAsync()
         {
             await this.SetupLongPollAsync();
             this.OnBotStarted?.Invoke(this, null);
             while (true)
             {
+                //TODO: Проверить, как часто отправляются запросы и узнать причину, 
+                //      почему валится сервер с ошибкой 143.
                 try
                 {
                     // Делаем Long Poll запрос на сервер.
@@ -116,7 +114,6 @@ namespace chatbotvk.Bot.Core
                             Ts = this._pollSettings.Ts,
                             Wait = this._longPollTimeoutWaitSeconds
                         });
-
                     // Обрабатываем ответ.
                     BotsLongPollHistoryResponse handledResponse = 
                         await CheckLongPollResponseForErrorsAndHandle(longPollResponse);
@@ -131,7 +128,7 @@ namespace chatbotvk.Bot.Core
                 catch (Exception ex)
                 {
                     this.Logger.LogError(ex.Message + "\r\n" + ex.StackTrace);
-                    throw;
+                    await this.SetupLongPollAsync();
                 }
             }
         }

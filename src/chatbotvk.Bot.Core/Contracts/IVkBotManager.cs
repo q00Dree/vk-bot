@@ -19,6 +19,5 @@ namespace chatbotvk.Bot.Core.Contracts
         event EventHandler OnBotStarted;
 
         Task StartAsync();
-        void Start();
     }
 }

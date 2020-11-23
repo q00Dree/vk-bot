@@ -8,7 +8,7 @@ COPY ./chatbotvk.Core/chatbotvk.Core.csproj ./chatbotvk.Core/
 COPY ./chatbotvk.Database.Models/chatbotvk.Database.Models.csproj ./chatbotvk.Database.Models/
 COPY ./chatbotvk.Database.NpgSqlContext/chatbotvk.Database.NpgSqlContext.csproj ./chatbotvk.Database.NpgSqlContext/
 COPY ./chatbotvk.Database.Repositories/chatbotvk.Database.Repositories.csproj ./chatbotvk.Database.Repositories/
-COPY ./chatbotvk.Services/chatbotvk.Services.csproj ./chatbotvk.Services/
+COPY ./chatbotvk.Services.Bank/chatbotvk.Services.Bank.csproj ./chatbotvk.Services.Bank/
 
 COPY ./chatbot-vk.sln .
 RUN dotnet restore

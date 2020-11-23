@@ -1,8 +1,11 @@
 ﻿using chatbotvk.Bot.Core;
 using chatbotvk.Bot.Core.Contracts;
 using chatbotvk.Bot.Core.Models.Events;
+using chatbotvk.Core.Models;
+using chatbotvk.Core.Services.External;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -20,20 +23,23 @@ namespace chatbotvk.Bot.EntryPoint
     {
         public IVkBotManager VkBot { get; private set; }
         public ILogger<Bot> Logger { get; set; }
-        public Bot(IVkBotManager VkBot, ILogger<Bot> logger)
+
+        private IExchangeRateService ExchangeRateService { get; set; }
+        public Bot(IVkBotManager VkBot, 
+                   ILogger<Bot> logger,
+                   IExchangeRateService exchangeRateService)
         {
             this.VkBot = VkBot;
             this.Logger = logger;
+            this.ExchangeRateService = exchangeRateService;
         }
-        public void Start()
+        public async Task StartAsync()
         {
             VkBot.OnMessageReceived += NewMessageHandler;
             VkBot.OnBotStarted += OnBotStartedHandler;
             VkBot.OnGroupUpdateReceived += VkBot_OnGroupUpdateReceived;
 
-            this.VkBot.Start();
-
-            Console.ReadLine();
+            await this.VkBot.StartAsync();
         }
 
         // Подробнее https://vk.com/dev/groups_events
@@ -77,6 +83,78 @@ namespace chatbotvk.Bot.EntryPoint
             {
                 string catUrl = @"https://loremflickr.com/400/300/";
                 await SendMessageWithImageFromWebAsync("cat", peerId, catUrl, "jpg");
+            }
+            else if(message_text == "rate")
+            {
+                BankResponse bankResponse = await ExchangeRateService.GetCurrentExchangeRatesAsync();
+
+                StringBuilder messageBuilder = new StringBuilder();
+
+                messageBuilder.Append($"Актуальный котировки на {bankResponse.CurrentRateDate.AddHours(3)}.\n");
+
+                foreach (var item in bankResponse.ActualValue)
+                {
+                    messageBuilder.Append($"Курс {item.Key} {item.Value} рублей.\n");
+                }
+
+                messageBuilder.Append($"Предыдущие котировки на {bankResponse.LastRateUpdateDate.AddHours(3)}.\n");
+
+                foreach (var item in bankResponse.PreviousValue)
+                {
+                    messageBuilder.Append($"Курс {item.Key} {item.Value} рублей.\n");
+                }
+
+                await SendMessageAsync(messageBuilder.ToString(), peerId);
+            }
+            if (message_text.StartsWith("map"))
+            {
+                string[] parsedString = message_text.Split(new char[] { ' ' });
+
+                if (parsedString.Length > 3)
+                {
+                    await VkBot.Api.Messages.SendAsync(new MessagesSendParams
+                    {
+                        PeerId = peerId, //Id получателя
+                        Message = "Неверный ввод 😆\nПопробуйте map 55.54 37.34", //Сообщение
+                        RandomId = new Random().Next(999999) //Уникальный идентификатор
+                    });
+                }
+                else
+                {
+                    List<string> coords = new List<string>(parsedString);
+                    coords.RemoveAt(0);
+
+                    for (int i = 0; i < coords.Count; i++)
+                    {
+                        if (coords[i].Contains(','))
+                            coords[i] = coords[i].Replace(',', '.');
+                    }
+
+                    try
+                    {
+                        await VkBot.Api.Messages.SendAsync(new MessagesSendParams
+                        {
+                            PeerId = peerId, //Id получателя
+                            Message = "Найденная карта", //Сообщение
+                                                         // Lat = 55.7531773, //Ширина
+                                                         // Longitude = 37.6157659, //Долгота
+                            Lat = Convert.ToDouble(coords[0]),
+                            Longitude = Convert.ToDouble(coords[1]),
+                            
+                            RandomId = new Random().Next(999999) //Уникальный идентификатор
+                        });
+                    }
+                    catch(Exception ex)
+                    {
+                        await VkBot.Api.Messages.SendAsync(new MessagesSendParams
+                        {
+                            PeerId = peerId, //Id получателя
+                            Message = ex.Message, //Сообщение ошибки
+
+                            RandomId = new Random().Next(999999) //Уникальный идентификатор
+                        });
+                    }
+                }
             }
         }
         #endregion
